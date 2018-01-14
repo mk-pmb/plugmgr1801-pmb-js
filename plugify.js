@@ -2,7 +2,14 @@
 /* -*- tab-width: 2 -*- */
 'use strict';
 
+var chkPlug = require('./lib/chkplug'),
+  hasOwn = Object.prototype.hasOwnProperty;
+
 function ifFun(x, d) { return ((typeof x) === 'function' ? x : d); }
+
+function pluginToString() {
+  return '[plugin '.concat(this.name || '(anonymous)', ' from ', this.srcUrl);
+}
 
 function anonFileCounter() {
   // Deliberately not using maxuniqid: Even if you do have enough
@@ -12,21 +19,20 @@ function anonFileCounter() {
   return n;
 }
 
+
 var EX = function plugify(jsModule, meta, installFunc) {
   if ((!installFunc) && ifFun(meta)) {
     installFunc = meta;
     meta = null;
   }
-  if (!ifFun(installFunc)) {
-    throw new TypeError('installFunc must be a function, not ' + installFunc);
-  }
-
   var plug = Object.assign({ jsModule: jsModule, install: installFunc }, meta);
-  if (!plug.srcUrl) {
-    plug.srcUrl = (module.filename || ('/?#' + anonFileCounter())
+  if (!hasOwn.call(plug, 'srcUrl')) {
+    plug.srcUrl = (jsModule.filename || ('/?#' + anonFileCounter())
       ).replace(/^file:\/+/, '/');
   }
+  if (!hasOwn.call(plug, 'toString')) { plug.toString = pluginToString; }
 
+  chkPlug.validatePlug(plug);
   return plug;
 };
 
